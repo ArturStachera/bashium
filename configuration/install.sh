@@ -26,6 +26,10 @@ printf "\e[34m%s\e[0m\n" "Debian Configuration"
 if ask_question "Do you want to configure the /sbin directory?"; then
     sbin=true
 fi
+
+if [[ $sbin ]]; then
+    ./sbin.sh
+fi
 read -rsn1 -p "Press Enter to continue..."
 
 clear
@@ -64,10 +68,6 @@ clear
 # Run the appropriate scripts
 if [[ $firmware ]]; then
     ./firmware.sh
-fi
-
-if [[ $sbin ]]; then
-    ./sbin.sh
 fi
 
 if [[ $beep ]]; then
