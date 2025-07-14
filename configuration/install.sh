@@ -51,14 +51,6 @@ read -rsn1 -p "Press Enter to continue..."
 clear
 printf "\e[34m%s\e[0m\n" "Debian Configuration"
 
-if ask_question "Do you want to configure repository addition (software-properties)?"; then
-    repo=true
-fi
-read -rsn1 -p "Press Enter to continue..."
-
-clear
-printf "\e[34m%s\e[0m\n" "Debian Configuration"
-
 if ask_question "Do you want to install drivers?"; then
     firmware=true
 fi
@@ -78,8 +70,5 @@ if [[ $bluetooth ]]; then
     ./bluetooth.sh
 fi
 
-if [[ $repo ]]; then
-    ./repo.sh
-fi
 
 echo "Successfully completed. Please restart your computer."
