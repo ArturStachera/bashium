@@ -30,7 +30,7 @@ class ScriptModule:
             script_dir = shlex.quote(str(self.script_path.parent))
             cmd = f"cd {script_dir} && ./install.sh; exec bash"
             subprocess.run(
-                ['kitty', '-e', 'bash', '-c', cmd],
+                ['x-terminal-emulator', '-e', 'bash', '-c', cmd],
                 check=True
             )
             print(f"[DEBUG] Script executed successfully: {self.script_path}")
