@@ -7,7 +7,6 @@ import shlex
 CONFIG_DESCRIPTION = (
     "Drivers, export /sbin directory to PATH variable\n"
     "Disable sound on logout\n"
-    "Add repositories using terminal commands."
 )
 
 XFCE_LOOK_DESCRIPTION = (
