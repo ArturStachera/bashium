@@ -23,5 +23,5 @@ if id "$username" &>/dev/null; then
         echo "Added to the .bashrc file."
     fi
 else
-    echo "User $username doas not exist. Check the username and try again."
+    echo "User $username does not exist. Check the username and try again."
 fi
