@@ -11,7 +11,7 @@ HOME_DIR="/home/$USERNAME"
 
 # Check if the home directory exists
 if [ ! -d "$HOME_DIR" ]; then
-    echo "The home directory for the user $USERNAME doas not exist."
+    echo "The home directory for the user $USERNAME does not exist."
     exit 1
 fi
 
