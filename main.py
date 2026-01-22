@@ -20,16 +20,22 @@ SOFTWARE_DESCRIPTION = "Codecs, multimedia, compilation and extra software scrip
 
 
 class ScriptModule:
-    def __init__(self, name: str, script_path: Path, description: str):
+    def __init__(self, name: str, script_path: Path, description: str, enabled: bool = True):
         self.name = name
         self.script_path = script_path
         self.description = description
+        self.enabled = enabled
 
     def run(self):
         print(f"[DEBUG] Attempting to run script: {self.script_path}")
         try:
-            script_dir = shlex.quote(str(self.script_path.parent))
-            cmd = f"cd {script_dir} && ./install.sh; exec bash"
+            if self.script_path.is_dir():
+                script_dir = shlex.quote(str(self.script_path))
+                cmd = f"cd {script_dir} && ./install.sh; exec bash"
+            else:
+                script_dir = shlex.quote(str(self.script_path.parent))
+                script_name = shlex.quote(str(self.script_path.name))
+                cmd = f"cd {script_dir} && bash ./{script_name}; exec bash"
             subprocess.run(
                 ['x-terminal-emulator', '-e', 'bash', '-c', cmd],
                 check=True
@@ -102,6 +108,9 @@ class BashiumApp:
                 ipadx=10, ipady=5,
                 sticky="nsew"
             )
+
+            if not module.enabled:
+                run_button.configure(state=DISABLED)
 
             ttk.Label(self.root, text=module.description, wraplength=400, anchor="w", justify="left", style="Bashium.TLabel").grid(
                 column=2, row=idx, padx=10, pady=5, sticky="nsew"
@@ -189,14 +198,26 @@ class BashiumApp:
             pass
 
 
+def has_nvidia_gpu() -> bool:
+    try:
+        out = subprocess.check_output(["lspci"], text=True, stderr=subprocess.DEVNULL)
+        return "nvidia" in out.lower()
+    except Exception:
+        return False
+
+
 
 def main():
     base_dir = Path(__file__).parent.resolve()
 
+    nvidia_detected = has_nvidia_gpu()
+    nvidia_desc = "Detected NVIDIA GPU. You can configure drivers now." if nvidia_detected else "No NVIDIA GPU detected on this system."
+
     modules = [
-        ScriptModule("Configuration", base_dir / "configuration" / "install.sh", CONFIG_DESCRIPTION),
-        ScriptModule("Xfce Look", base_dir / "xfce_look" / "install.sh", XFCE_LOOK_DESCRIPTION),
-        ScriptModule("Software", base_dir / "software" / "install.sh", SOFTWARE_DESCRIPTION),
+        ScriptModule("Configuration", base_dir / "configuration", CONFIG_DESCRIPTION),
+        ScriptModule("NVIDIA", base_dir / "configuration" / "nvidia.sh", nvidia_desc, enabled=nvidia_detected),
+        ScriptModule("Xfce Look", base_dir / "xfce_look", XFCE_LOOK_DESCRIPTION),
+        ScriptModule("Software", base_dir / "software", SOFTWARE_DESCRIPTION),
     ]
 
     root = ttk.Window(themename="darkly")
