@@ -78,13 +78,25 @@ if [[ $realtek ]]; then
 fi
 
 if [[ $nvidia ]]; then
-    echo "Installing Nvidia driver..."
-    sudo apt install nvidia-driver linux-headers-amd64 firmware-misc-nonfree -y
+    echo "Configuring NVIDIA graphics..."
+    bash ./nvidia.sh
 fi
 
 if [[ $nonfree ]]; then
     echo "Installing Non-free driver..."
-    sudo apt install firmware-misc-nonfree firmware-linux-nonfree -y
+    target_suite=""
+    if apt-cache policy firmware-misc-nonfree 2>/dev/null | grep -q "bpo"; then
+        codename=$( . /etc/os-release 2>/dev/null; echo "${VERSION_CODENAME:-}" )
+        if [[ -n $codename ]]; then
+            target_suite="${codename}-backports"
+        fi
+    fi
+
+    if [[ -n $target_suite ]]; then
+        sudo apt install -y -t "$target_suite" firmware-misc-nonfree firmware-linux-nonfree amd64-microcode
+    else
+        sudo apt install -y firmware-misc-nonfree firmware-linux-nonfree amd64-microcode
+    fi
 fi
 
 echo "Firmware installation complete."
