@@ -1,93 +1,147 @@
 # BASHIUM
 
-**BASHIUM** is a graphical tool written in Python that provides a user-friendly interface to manage and execute a collection of system configuration scripts tailored for Debian-based Linux distributions.
+**BASHIUM** is a small GUI launcher for Debian configuration scripts.
 
-It leverages `tkinter` and `ttkbootstrap` to present a clean and responsive GUI for running system tweaks, software installers, and appearance configurations. BASHIUM is designed for users who prefer a visual way to set up or customize their Debian-based environment without manually handling multiple terminal scripts.
+It uses `tkinter` + `ttkbootstrap` to provide a clean interface for running system tweaks, software installers, and appearance setup scripts.
 
 ---
 
 ## Features
 
-* Organized, GUI-based access to configuration and setup scripts
-* Easily extendable — add your own scripts or modify existing ones
-* Clean, modern interface with `ttkbootstrap` styling
-* Designed specifically for Debian-based systems
+- **Script launcher GUI**
+- **Easy to extend** (add/modify scripts under `configuration/`, `software/`, `xfce_look/`)
+- **Modern look & feel** via `ttkbootstrap`
+- **Theme/palette preset selector** (persisted per-user)
+- **Debian-focused** (APT sources, firmware, NVIDIA drivers)
 
 ---
 
-## System Requirements
+## Requirements
 
-This application depends on the system-provided `tkinter` GUI toolkit and Python virtual environment support.  
-Make sure to install these packages before launching BASHIUM:
+Install the system packages required to run the GUI and bootstrap the Python virtualenv:
 
 ```bash
-sudo apt install python3-tk python3-venv
-
+sudo apt update
+sudo apt install -y \
+  python3 \
+  python3-tk \
+  python3-venv \
+  curl \
+  git
 ```
 
----
+Notes:
 
-## Python Dependencies
-
-Python packages used by the application are listed in `requirements.txt`, including:
-
-* `ttkbootstrap` — modern theming for tkinter
-
-These dependencies will be installed automatically when running the setup script (see below).
+- `curl` can be required by `pip`/build steps on minimal installs.
+- Some scripts may additionally require tools like `unzip` (for XFCE themes/icons).
 
 ---
 
-## Running the Application
+## Python dependencies
 
-To ensure all dependencies are handled correctly and to keep your environment clean, the project uses a Python virtual environment.
+Python packages are listed in `requirements.txt` (currently: `ttkbootstrap`).
 
-### Quick Start
+---
 
-Clone the repository and run the startup script:
+## Running
+
+### Quick start
 
 ```bash
-git clone http://github.com/ArturStachera/bashium.git
+git clone https://github.com/ArturStachera/bashium.git
 cd bashium
 chmod +x bashium.sh
 ./bashium.sh
 ```
 
-This script will:
+The startup script will:
 
-* Check if a virtual environment exists under `env/`
-* If not, it will create it and install all Python dependencies
-* Activate the environment
-* Run the application
+- **Create** a virtual environment under `env/` (if missing)
+- **Install** Python dependencies
+- **Start** the application
 
----
-
-### Manual Steps (Optional)
-
-If you prefer to do everything manually:
+### Manual run (optional)
 
 ```bash
 python3 -m venv env
 source env/bin/activate
-pip install ttkbootstrap
+pip install -r requirements.txt
 python3 main.py
 ```
 
 ---
 
-## Folder Structure
+## Folder structure
 
-```bash
-bashium-master/
-├── bashium.sh           # Startup script
-├── configuration/       # Scripts and configs managed by the app
-├── env/                 # Virtual environment (auto-created)
-├── main.py              # Main Python GUI entry point
-├── requirements.txt     # Python dependencies
-├── software/            # Optional tools or custom setups
-├── xfce_look/           # XFCE theming/configuration files
-├── LICENSE              # MIT license
-└── README.md            # You’re reading this
+```text
+bashium/
+  bashium.sh
+  main.py
+  requirements.txt
+  configuration/
+  software/
+  xfce_look/
 ```
+
+---
+
+## NVIDIA Drivers (Debian)
+
+The NVIDIA flow is implemented in:
+
+- `configuration/nvidia.sh`
+
+It is called from:
+
+- `configuration/firmware.sh`
+
+### What it does
+
+When an NVIDIA GPU is detected, the script:
+
+- Asks whether to use the proprietary NVIDIA driver or Nouveau
+- If proprietary is selected:
+  - Ensures Debian `contrib non-free non-free-firmware` components are enabled
+  - Installs `nvidia-detect` and picks the recommended package (including legacy packages such as `nvidia-legacy-470xx-driver` when applicable)
+  - Enables `*-backports` automatically if the recommended package is not available in the current APT sources
+  - Blacklists Nouveau and updates initramfs
+- If Nouveau is selected:
+  - Removes the Nouveau blacklist (if present)
+  - Optionally purges installed `nvidia-*` packages
+
+After changing the driver, a reboot is recommended.
+
+### Repo and release detection
+
+During the NVIDIA flow, BASHIUM detects:
+
+- Debian track: `stable`, `testing`, `unstable` (based on `apt-cache policy`)
+- Whether `*-backports` is already enabled
+- Whether `non-free` is already present in APT sources
+
+This is used to avoid enabling backports on `unstable` and to make the flow more robust across different Debian releases.
+
+### Troubleshooting
+
+- If you see messages like "Conflicting nouveau kernel module loaded" during installation, it usually means Nouveau was already loaded by the running kernel session. BASHIUM will blacklist Nouveau for the next boot, but a reboot is still required for the proprietary driver to take over.
+- If you enabled `*-backports` (explicitly or implicitly) and then see dependency errors for `firmware-linux-nonfree` / `firmware-misc-nonfree`, make sure the firmware packages are installed from the same suite as the NVIDIA packages (stable vs backports). BASHIUM attempts to keep them consistent automatically.
+- Boot logs showing repeated `ata` / `I/O error` messages indicate storage problems and are unrelated to GPU drivers. Check the disk/cable/port and review SMART data.
+
+---
+
+## GUI appearance
+
+You can switch the UI appearance from the top bar.
+
+The selected preset is stored in:
+
+- `~/.config/bashium/config.json` (or `$XDG_CONFIG_HOME/bashium/config.json`)
+
+### Palette presets (HEX colors)
+
+The GUI uses palette presets based on HTML-like HEX codes (for example `#282828`).
+
+The palette preset is stored in the config file under `palette_preset`.
 
 ---
 
