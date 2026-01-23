@@ -1,5 +1,7 @@
 # BASHIUM
 
+![](https://github.com/ArturStachera/bashium/releases/download/v1.0.1/Screenshot_2026-01-23.png)
+
 **BASHIUM** is a small GUI launcher for Debian configuration scripts.
 
 It uses `customtkinter` to provide a clean interface for running system tweaks, software installers, and appearance setup scripts.
