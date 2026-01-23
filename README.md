@@ -2,7 +2,7 @@
 
 **BASHIUM** is a small GUI launcher for Debian configuration scripts.
 
-It uses `tkinter` + `ttkbootstrap` to provide a clean interface for running system tweaks, software installers, and appearance setup scripts.
+It uses `customtkinter` to provide a clean interface for running system tweaks, software installers, and appearance setup scripts.
 
 ---
 
@@ -10,8 +10,9 @@ It uses `tkinter` + `ttkbootstrap` to provide a clean interface for running syst
 
 - **Script launcher GUI**
 - **Easy to extend** (add/modify scripts under `configuration/`, `software/`, `xfce_look/`)
-- **Modern look & feel** via `ttkbootstrap`
+- **Modern look & feel** via `customtkinter`
 - **Theme/palette preset selector** (persisted per-user)
+- **Hardware detection panel** (Wi-Fi, Bluetooth, NVIDIA, APT repo status)
 - **Debian-focused** (APT sources, firmware, NVIDIA drivers)
 
 ---
@@ -39,7 +40,7 @@ Notes:
 
 ## Python dependencies
 
-Python packages are listed in `requirements.txt` (currently: `ttkbootstrap`).
+Python packages are listed in `requirements.txt` (currently: `customtkinter`).
 
 ---
 
@@ -91,9 +92,7 @@ The NVIDIA flow is implemented in:
 
 - `configuration/nvidia.sh`
 
-It is called from:
-
-- `configuration/firmware.sh`
+It is intended to be run from the main GUI as a dedicated module.
 
 ### What it does
 
@@ -117,7 +116,7 @@ During the NVIDIA flow, BASHIUM detects:
 
 - Debian track: `stable`, `testing`, `unstable` (based on `apt-cache policy`)
 - Whether `*-backports` is already enabled
-- Whether `non-free` is already present in APT sources
+- Whether `contrib`, `non-free`, and `non-free-firmware` are present in APT sources
 
 This is used to avoid enabling backports on `unstable` and to make the flow more robust across different Debian releases.
 

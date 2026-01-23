@@ -1,5 +1,14 @@
 #!/bin/bash
 
+print_header(){
+    clear
+    cat <<'EOF'
++----------------------------------------------------------+
+|                    BASHIUM NVIDIA SETUP                   |
++----------------------------------------------------------+
+EOF
+}
+
 ask_question(){
     local answer
     printf "\e[33m%s\e[0m (y/n): " "$1"
@@ -56,14 +65,45 @@ get_debian_track(){
 }
 
 has_backports_enabled(){
-    if grep -Rqs -- '-backports' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
+    if grep -REqs -- '^[[:space:]]*deb[[:space:]].*-backports([[:space:]]|$)' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
         return 0
     fi
     return 1
 }
 
+has_component_enabled(){
+    local component="$1"
+    if [[ -z $component ]]; then
+        return 1
+    fi
+
+    if grep -REqs -- "^[[:space:]]*deb[[:space:]].*([[:space:]]|^)${component}([[:space:]]|$)" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
+        return 0
+    fi
+
+    if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
+        if grep -Eq "^[[:space:]]*Components:.*([[:space:]]|^)${component}([[:space:]]|$)" /etc/apt/sources.list.d/debian.sources 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
 has_nonfree_enabled(){
-    if grep -Rqs -- 'non-free' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
+    has_component_enabled "non-free"
+}
+
+has_nonfree_firmware_enabled(){
+    has_component_enabled "non-free-firmware"
+}
+
+has_contrib_enabled(){
+    has_component_enabled "contrib"
+}
+
+has_any_nonfree_flavor_enabled(){
+    if has_nonfree_enabled || has_nonfree_firmware_enabled; then
         return 0
     fi
     return 1
@@ -84,16 +124,32 @@ ensure_non_free_components(){
     local changed=false
 
     if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
-        if ! grep -q "^[[:space:]]*Components:.*non-free" /etc/apt/sources.list.d/debian.sources; then
-            sed -i -E 's/^(Components:[[:space:]]*)(.*)$/\1\2 contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
+        if ! grep -Eq "^[[:space:]]*Components:.*([[:space:]]|^)contrib([[:space:]]|$)" /etc/apt/sources.list.d/debian.sources; then
+            sed -i -E 's/^(Components:[[:space:]]*)(.*)$/\1\2 contrib/' /etc/apt/sources.list.d/debian.sources
+            changed=true
+        fi
+        if ! grep -Eq "^[[:space:]]*Components:.*([[:space:]]|^)non-free([[:space:]]|$)" /etc/apt/sources.list.d/debian.sources; then
+            sed -i -E 's/^(Components:[[:space:]]*)(.*)$/\1\2 non-free/' /etc/apt/sources.list.d/debian.sources
+            changed=true
+        fi
+        if ! grep -Eq "^[[:space:]]*Components:.*([[:space:]]|^)non-free-firmware([[:space:]]|$)" /etc/apt/sources.list.d/debian.sources; then
+            sed -i -E 's/^(Components:[[:space:]]*)(.*)$/\1\2 non-free-firmware/' /etc/apt/sources.list.d/debian.sources
             changed=true
         fi
     fi
 
     if [[ -f /etc/apt/sources.list ]]; then
         if grep -Eq '^[[:space:]]*deb[[:space:]].*[[:space:]]main([[:space:]]|$)' /etc/apt/sources.list; then
-            if ! grep -Eq '^[[:space:]]*deb[[:space:]].*[[:space:]](main.*non-free|main.*non-free-firmware|main.*contrib)' /etc/apt/sources.list; then
-                sed -i -E 's/^(deb[[:space:]].*[[:space:]]main)([[:space:]]*)$/\1 contrib non-free non-free-firmware\2/' /etc/apt/sources.list
+            if ! grep -Eq '^[[:space:]]*deb[[:space:]].*[[:space:]]main.*([[:space:]]|^)contrib([[:space:]]|$)' /etc/apt/sources.list; then
+                sed -i -E '/^[[:space:]]*deb[[:space:]].*[[:space:]]main([[:space:]]|$)/ s/$/ contrib/' /etc/apt/sources.list
+                changed=true
+            fi
+            if ! grep -Eq '^[[:space:]]*deb[[:space:]].*[[:space:]]main.*([[:space:]]|^)non-free([[:space:]]|$)' /etc/apt/sources.list; then
+                sed -i -E '/^[[:space:]]*deb[[:space:]].*[[:space:]]main([[:space:]]|$)/ s/$/ non-free/' /etc/apt/sources.list
+                changed=true
+            fi
+            if ! grep -Eq '^[[:space:]]*deb[[:space:]].*[[:space:]]main.*([[:space:]]|^)non-free-firmware([[:space:]]|$)' /etc/apt/sources.list; then
+                sed -i -E '/^[[:space:]]*deb[[:space:]].*[[:space:]]main([[:space:]]|$)/ s/$/ non-free-firmware/' /etc/apt/sources.list
                 changed=true
             fi
         fi
@@ -213,8 +269,7 @@ if ! has_nvidia_gpu; then
     exit 0
 fi
 
-clear
-printf "\e[34m%s\e[0m\n" "NVIDIA graphics setup"
+print_header
 
 echo "NVIDIA GPU detected."
 
@@ -223,12 +278,18 @@ if ask_question "Use proprietary NVIDIA driver (recommended for performance)?"; 
     track=$(get_debian_track)
     backports="no"
     nonfree="no"
+    contrib="no"
+    nonfree_firmware="no"
     if has_backports_enabled; then backports="yes"; fi
     if has_nonfree_enabled; then nonfree="yes"; fi
+    if has_contrib_enabled; then contrib="yes"; fi
+    if has_nonfree_firmware_enabled; then nonfree_firmware="yes"; fi
 
     echo "Detected Debian track: $track"
     echo "Backports enabled: $backports"
+    echo "Contrib enabled: $contrib"
     echo "Non-free enabled: $nonfree"
+    echo "Non-free-firmware enabled: $nonfree_firmware"
 
     install_proprietary "$codename" "$track"
 else

@@ -19,39 +19,74 @@ ask_question(){
     fi
 }
 
+print_header(){
+    clear
+    cat <<'EOF'
++----------------------------------------------------------+
+|                      BASHIUM SOFTWARE                     |
++----------------------------------------------------------+
+EOF
+}
+
+print_status_table(){
+    local codecs_status="$1"
+    local compilation_status="$2"
+    local multimedia_status="$3"
+    local extra_status="$4"
+
+    cat <<EOF
++----------------------+-------------------------------+
+| Component            | Selected                      |
++----------------------+-------------------------------+
+| Codecs               | ${codecs_status}
+| Compilation tools    | ${compilation_status}
+| Multimedia apps      | ${multimedia_status}
+| Extra tools          | ${extra_status}
++----------------------+-------------------------------+
+EOF
+}
+
 # User questions
-clear
-printf "\e[34m%s\e[0m\n" "Debian Configuration"
+print_header
 
 if ask_question "Configure audio/video codecs?"; then
     codecs=true
 fi
 read -rsn1 -p "Press Enter to continue..."
 
-clear
-printf "\e[34m%s\e[0m\n" "Debian Configuration"
+print_header
 
 if ask_question "Install compilation tools?"; then
     compilation=true
 fi
 read -rsn1 -p "Press Enter to continue..."
 
-clear
-printf "\e[34m%s\e[0m\n" "Debian Configuration"
+print_header
 
 if ask_question "Configure multimedia?"; then
     multimedia=true
 fi
 read -rsn1 -p "Press Enter to continue..."
 
-clear
-printf "\e[34m%s\e[0m\n" "Debian Configuration"
+print_header
 
 if ask_question "Configure additional elements?"; then
     extra=true
 fi
 read -rsn1 -p "Press Enter to continue..."
-clear
+print_header
+
+codecs_status="no"
+compilation_status="no"
+multimedia_status="no"
+extra_status="no"
+if [[ $codecs ]]; then codecs_status="yes"; fi
+if [[ $compilation ]]; then compilation_status="yes"; fi
+if [[ $multimedia ]]; then multimedia_status="yes"; fi
+if [[ $extra ]]; then extra_status="yes"; fi
+
+print_status_table "$codecs_status" "$compilation_status" "$multimedia_status" "$extra_status"
+echo ""
 
 
 # Run the appropriate scripts

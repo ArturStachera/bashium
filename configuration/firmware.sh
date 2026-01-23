@@ -60,13 +60,15 @@ detect_wifi_vendors(){
     wifi_realtek=false
     wifi_atheros=false
     wifi_mediatek=false
+    wifi_ralink=false
 
     if echo "$hw" | grep -Eqi 'Network controller|Wireless|Wi-Fi|802\.11'; then
-        if echo "$hw" | grep -qi 'Intel'; then wifi_intel=true; fi
-        if echo "$hw" | grep -Eqi 'Broadcom|BCM'; then wifi_broadcom=true; fi
-        if echo "$hw" | grep -Eqi 'Realtek|RTL'; then wifi_realtek=true; fi
-        if echo "$hw" | grep -Eqi 'Atheros|Qualcomm'; then wifi_atheros=true; fi
-        if echo "$hw" | grep -Eqi 'MediaTek|Mediatek|MTK'; then wifi_mediatek=true; fi
+        if echo "$hw" | grep -Eqi 'Intel|8086:'; then wifi_intel=true; fi
+        if echo "$hw" | grep -Eqi 'Broadcom|BCM|14e4:'; then wifi_broadcom=true; fi
+        if echo "$hw" | grep -Eqi 'Realtek|RTL|10ec:|0bda:'; then wifi_realtek=true; fi
+        if echo "$hw" | grep -Eqi 'Atheros|Qualcomm|168c:|0cf3:'; then wifi_atheros=true; fi
+        if echo "$hw" | grep -Eqi 'MediaTek|Mediatek|MTK|14c3:|0e8d:'; then wifi_mediatek=true; fi
+        if echo "$hw" | grep -Eqi 'Ralink|148f:'; then wifi_ralink=true; fi
     fi
 }
 
@@ -103,12 +105,12 @@ if [[ $wifi_mediatek == true ]] && ask_question "Detected MediaTek Wi-Fi. Instal
     mediatek=true
 fi
 
-if [[ $wifi_intel == false && $wifi_broadcom == false && $wifi_realtek == false && $wifi_atheros == false && $wifi_mediatek == false ]]; then
-    echo "No Wi-Fi hardware detected."
+if [[ $wifi_ralink == true ]] && ask_question "Detected Ralink Wi-Fi. Install firmware-ralink?"; then
+    ralink=true
 fi
 
-if has_nvidia_gpu && ask_question "Detected NVIDIA GPU. Configure NVIDIA graphics now?"; then
-    nvidia=true
+if [[ $wifi_intel == false && $wifi_broadcom == false && $wifi_realtek == false && $wifi_atheros == false && $wifi_mediatek == false && $wifi_ralink == false ]]; then
+    echo "No Wi-Fi hardware detected."
 fi
 
 if ask_question "Install non-free firmware bundle (firmware-linux-nonfree)?"; then
@@ -144,15 +146,17 @@ if [[ $mediatek ]]; then
     sudo apt install firmware-mediatek -y
 fi
 
-if [[ $nvidia ]]; then
-    echo "Configuring NVIDIA graphics..."
-    bash ./nvidia.sh
+if [[ $ralink ]]; then
+    echo "Installing Ralink WiFi firmware..."
+    sudo apt install firmware-ralink -y
 fi
 
 if [[ $nonfree ]]; then
     echo "Installing Non-free driver..."
     if ! has_nonfree_enabled; then
         ensure_non_free_components
+    else
+        echo "Non-free components already enabled in APT sources."
     fi
     target_suite=""
     if apt-cache policy firmware-misc-nonfree 2>/dev/null | grep -q "bpo"; then
